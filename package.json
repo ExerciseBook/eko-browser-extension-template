@@ -2,6 +2,7 @@
   "name": "eko-browser-extension",
   "version": "1.0.0",
   "description": "eko browser extension",
+  "packageManager": "pnpm@9.15.4",
   "main": "index.js",
   "scripts": {
     "watch": "webpack --config webpack/webpack.dev.js --watch",

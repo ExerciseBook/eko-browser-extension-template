@@ -1,0 +1,49 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+          run_install: |
+            args: [--frozen-lockfile, --strict-peer-dependencies]
+        timeout-minutes: 10
+
+      - name: Build
+        run: pnpm build
+        timeout-minutes: 15
+
+      - name: Upload dist folder as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chromium-extension
+          path: dist/
+
+      - name: Create Release if Tag is pushed
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG_NAME=$(echo $GITHUB_REF | sed 's/refs\/tags\///')
+          gh release create $TAG_NAME dist/* --title "Release $TAG_NAME" --notes "Release notes for $TAG_NAME"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
